@@ -6,9 +6,11 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 find_package(glm CONFIG REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui)
 
 include(erased.cmake)
 
 add_executable(${PROJECT_NAME} main.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${erased_SOURCE_DIR}/erased/include)
+target_link_libraries(${PROJECT_NAME} PRIVATE Qt6::Core Qt6::Gui)
