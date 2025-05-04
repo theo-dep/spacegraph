@@ -16,7 +16,6 @@ struct matrix_trait
 {
     static_assert(false, "Must be implemented for your own matrix type");
     static T multiply(const T& self, const T& other);
-    static T type_error();
 };
 
 struct Multiply
@@ -24,9 +23,7 @@ struct Multiply
     constexpr static Multipliable invoker(const auto& self, const Multipliable& other)
     {
         using SelfType = std::remove_cvref_t<decltype(self)>;
-        if (erased::is<SelfType>(other))
-            return matrix_trait<SelfType>::multiply(self, erased::any_cast<SelfType>(other));
-        return matrix_trait<SelfType>::type_error();
+        return matrix_trait<SelfType>::multiply(self, erased::any_cast<SelfType>(other));
     }
 
     constexpr Multipliable multiply(this const auto& erased, const Multipliable& other)
@@ -47,10 +44,14 @@ struct matrix_trait<glm::mat4>
     {
         return glm::matrixCompMult(self, other);
     }
+};
 
-    static glm::mat4 type_error()
+template <>
+struct matrix_trait<QMatrix4x4>
+{
+    static QMatrix4x4 multiply(const QMatrix4x4& self, const QMatrix4x4& other)
     {
-        return glm::mat4(0);
+        return self * other;
     }
 };
 
@@ -64,20 +65,6 @@ QMatrix4x4 create(float val)
     return mat;
 }
 
-template <>
-struct matrix_trait<QMatrix4x4>
-{
-    static QMatrix4x4 multiply(const QMatrix4x4& self, const QMatrix4x4& other)
-    {
-        return self * other;
-    }
-
-    static QMatrix4x4 type_error()
-    {
-        return create(0);
-    }
-};
-
 int main()
 {
     glm::mat4 matGlm1(2), matGlm2(3);
@@ -90,13 +77,17 @@ int main()
     assert(erased::is<QMatrix4x4>(resQt));
     std::println("qt: {}", QDebug::toString(erased::any_cast<QMatrix4x4>(resQt)).toStdString());
 
-    Multipliable resGlmFalse = test(matGlm1, matQt2);
-    assert(erased::is<glm::mat4>(resGlmFalse));
-    std::println("glm x qt: {}", glm::to_string(erased::any_cast<glm::mat4>(resGlmFalse)));
+    try {
+        Multipliable resGlmFalse = test(matGlm1, matQt2);
+    } catch (std::bad_cast) {
+        std::println("glm x qt: not compatible");
+    }
 
-    Multipliable resQtFalse = test(matQt1, matGlm2);
-    assert(erased::is<QMatrix4x4>(resQtFalse));
-    std::println("qt x glm: {}", QDebug::toString(erased::any_cast<QMatrix4x4>(resQtFalse)).toStdString());
+    try {
+        Multipliable resQtFalse = test(matQt1, matGlm2);
+    } catch (std::bad_cast) {
+        std::println("qt x glm: not compatible");
+    }
 
     return 0;
 }
