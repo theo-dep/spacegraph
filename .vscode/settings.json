@@ -88,7 +88,11 @@
         "future": "cpp",
         "shared_mutex": "cpp",
         "stacktrace": "cpp",
-        "stdfloat": "cpp"
+        "stdfloat": "cpp",
+        "valarray": "cpp"
     },
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "cSpell.words": [
+        "spacetree"
+    ]
 }

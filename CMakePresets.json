@@ -9,5 +9,24 @@
                 "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
             }
         }
+    ],
+    "buildPresets": [
+        {
+            "name": "vcpkg",
+            "configurePreset": "vcpkg"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "vcpkg",
+            "configurePreset": "vcpkg",
+            "output": {
+                "outputOnFailure": true
+            },
+            "execution": {
+                "noTestsAction": "error",
+                "stopOnFailure": true
+            }
+        }
     ]
 }
