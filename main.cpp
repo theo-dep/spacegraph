@@ -12,13 +12,21 @@ struct Multiply;
 using Multipliable = erased::erased<Multiply, erased::Copy, erased::Move>;
 
 template <typename T>
-Multipliable multiply(const T& self, const Multipliable& other);
+struct matrix_trait
+{
+    static_assert(false, "Must be implemented for your own matrix type");
+    static T multiply(const T& self, const T& other);
+    static T type_error();
+};
 
 struct Multiply
 {
     constexpr static Multipliable invoker(const auto& self, const Multipliable& other)
     {
-        return ::multiply(self, other);
+        using SelfType = std::remove_cvref_t<decltype(self)>;
+        if (erased::is<SelfType>(other))
+            return matrix_trait<SelfType>::multiply(self, erased::any_cast<SelfType>(other));
+        return matrix_trait<SelfType>::type_error();
     }
 
     constexpr Multipliable multiply(this const auto& erased, const Multipliable& other)
@@ -33,14 +41,18 @@ Multipliable test(const Multipliable& mat, const Multipliable& other)
 }
 
 template <>
-Multipliable multiply<glm::mat4>(const glm::mat4& self, const Multipliable& other)
+struct matrix_trait<glm::mat4>
 {
-    try {
-        return glm::matrixCompMult(self, erased::any_cast<glm::mat4>(other));
-    } catch (std::bad_cast) {
+    static glm::mat4 multiply(const glm::mat4& self, const glm::mat4& other)
+    {
+        return glm::matrixCompMult(self, other);
+    }
+
+    static glm::mat4 type_error()
+    {
         return glm::mat4(0);
     }
-}
+};
 
 QMatrix4x4 create(float val)
 {
@@ -53,14 +65,18 @@ QMatrix4x4 create(float val)
 }
 
 template <>
-Multipliable multiply<QMatrix4x4>(const QMatrix4x4& self, const Multipliable& other)
+struct matrix_trait<QMatrix4x4>
 {
-    try {
-        return self * erased::any_cast<QMatrix4x4>(other);
-    } catch (std::bad_cast) {
+    static QMatrix4x4 multiply(const QMatrix4x4& self, const QMatrix4x4& other)
+    {
+        return self * other;
+    }
+
+    static QMatrix4x4 type_error()
+    {
         return create(0);
     }
-}
+};
 
 int main()
 {

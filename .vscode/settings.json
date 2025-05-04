@@ -83,7 +83,12 @@
         "text_encoding": "cpp",
         "thread": "cpp",
         "typeinfo": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "source_location": "cpp",
+        "future": "cpp",
+        "shared_mutex": "cpp",
+        "stacktrace": "cpp",
+        "stdfloat": "cpp"
     },
     "editor.formatOnSave": true
 }
