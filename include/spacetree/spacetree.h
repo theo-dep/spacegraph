@@ -2,8 +2,7 @@
 
 #include <erased/erased.h>
 
-struct Multiply;
-using Multipliable = erased::erased<Multiply, erased::Copy, erased::Move>;
+#include <optional>
 
 template <typename T>
 struct matrix_trait
@@ -12,16 +11,34 @@ struct matrix_trait
     static T multiply(const T& self, const T& other);
 };
 
-struct Multiply
+namespace spacetree
 {
-    constexpr static Multipliable invoker(const auto& self, const Multipliable& other)
+
+    namespace details
     {
-        using SelfType = std::remove_cvref_t<decltype(self)>;
-        return matrix_trait<SelfType>::multiply(self, erased::any_cast<SelfType>(other));
+
+        struct Multiply;
+        using Multipliable = erased::erased<Multiply, erased::Copy, erased::Move>;
+
+        struct Multiply
+        {
+            constexpr static Multipliable invoker(const auto& self, const Multipliable& other)
+            {
+                using SelfType = std::remove_cvref_t<decltype(self)>;
+                return matrix_trait<SelfType>::multiply(self, erased::any_cast<SelfType>(other));
+            }
+
+            constexpr Multipliable multiply(this const auto& erased, const Multipliable& other)
+            {
+                return erased.invoke(Multiply{}, other);
+            }
+        };
+
     }
 
-    constexpr Multipliable multiply(this const auto& erased, const Multipliable& other)
+    struct Node
     {
-        return erased.invoke(Multiply{}, other);
-    }
-};
+        std::optional<details::Multipliable> transform_to(const Node& /*other*/) { return std::nullopt; }
+    };
+
+}

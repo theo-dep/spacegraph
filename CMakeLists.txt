@@ -12,5 +12,4 @@ find_package(Catch2 CONFIG REQUIRED)
 include(cmake/erased.cmake)
 
 enable_testing()
-add_test(NAME ${PROJECT_NAME} COMMAND ctest --test-dir=tests)
 add_subdirectory(tests)
