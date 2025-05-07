@@ -5,11 +5,11 @@ project(spacetree VERSION 1.0)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
+set(ERASED_DIR CACHE FILEPATH "Location of Erased dependency (default to submodule)")
+
 find_package(glm CONFIG REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui)
 find_package(Catch2 CONFIG REQUIRED)
-
-include(cmake/erased.cmake)
 
 enable_testing()
 add_subdirectory(tests)

@@ -1,7 +1,7 @@
 
 include_directories(
   ${CMAKE_SOURCE_DIR}/include
-  ${erased_SOURCE_DIR}/erased/include
+  ${ERASED_DIR}/erased/include
   ${CMAKE_SOURCE_DIR}/tests
 )
 
