@@ -14,6 +14,11 @@ inline FalseMatrixTrait createFalse(float val)
 template <>
 struct matrix_trait<FalseMatrixTrait>
 {
+    static void set_identity(FalseMatrixTrait& self)
+    {
+        self[std::slice(0, 16, 4)] = 1;
+    }
+
     static FalseMatrixTrait multiply(const FalseMatrixTrait& self, const FalseMatrixTrait& other)
     {
         return self * other;

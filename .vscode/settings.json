@@ -4,6 +4,7 @@
         "*docker*.yml": "dockercompose",
         "*compose*.yaml": "dockercompose",
         "*compose*.yml": "dockercompose",
+        "**/.github/**": "github-actions-workflow",
         "*.yml": "azure-pipelines",
         "*.yaml": "azure-pipelines",
         "*.pri": "makefile",
@@ -89,7 +90,8 @@
         "shared_mutex": "cpp",
         "stacktrace": "cpp",
         "stdfloat": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "ranges": "cpp"
     },
     "editor.formatOnSave": true,
     "cSpell.words": [

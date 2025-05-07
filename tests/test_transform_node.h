@@ -15,7 +15,7 @@ TEST_CASE("Transformation to another node successful", "[transform_node]")
     SECTION("Node has no parent, get the transformation between this node and itself",
             "Transformation is valid, it is an identity transformation")
     {
-        spacetree::Node node;
+        spacetree::Node node(TYPE{});
         REQUIRE(node.transform_to(node));
         REQUIRE(erased::any_cast<TYPE>(*node.transform_to(node)) == identity());
     }
