@@ -5,4 +5,6 @@ add_executable(tests_glm
 
 target_compile_definitions(tests_glm PRIVATE TYPE=glm::mat4)
 
+add_dependencies(tests_glm generate_amalgamated)
+
 catch_discover_tests(tests_glm)

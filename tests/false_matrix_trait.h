@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spacetree/spacetree.h>
+#include <spacetree/spacetree_amalgamated.h>
 
 #include <valarray>
 
