@@ -1,4 +1,5 @@
 add_executable(tests_glm
+    test_constructor_node.cpp
     test_matrix_trait.cpp
     test_transformation_node.cpp
 )

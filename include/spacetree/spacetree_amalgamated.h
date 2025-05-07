@@ -395,8 +395,8 @@ namespace spacetree
     struct Node final
     {
         template <typename T>
-        constexpr Node(std::in_place_type_t<T>, auto&&... args)
-            : _transform(std::forward<decltype(args)>(args)...)
+        constexpr Node(std::in_place_type_t<T> t, auto&&... args)
+            : _transform(t, std::forward<decltype(args)>(args)...)
         {
             _transform.set_identity();
         }
