@@ -20,7 +20,7 @@ struct matrix_trait<FalseMatrixTrait>
     }
 };
 
-inline spacetree::details::Multipliable test(const spacetree::details::Multipliable& mat, const spacetree::details::Multipliable& other)
+inline std::optional<spacetree::details::Transformable> test(const spacetree::details::Transformable& mat, const spacetree::details::Transformable& other)
 {
     return mat.multiply(other);
 }

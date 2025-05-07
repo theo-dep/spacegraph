@@ -18,17 +18,19 @@ namespace spacetree
     {
 
         struct Multiply;
-        using Multipliable = erased::erased<Multiply, erased::Copy, erased::Move>;
+        using Transformable = erased::erased<Multiply, erased::Copy, erased::Move>;
 
         struct Multiply
         {
-            constexpr static Multipliable invoker(const auto& self, const Multipliable& other)
+            constexpr static std::optional<Transformable> invoker(const auto& self, const Transformable& other)
             {
                 using SelfType = std::remove_cvref_t<decltype(self)>;
-                return matrix_trait<SelfType>::multiply(self, erased::any_cast<SelfType>(other));
+                if (erased::is<SelfType>(other))
+                    return matrix_trait<SelfType>::multiply(self, erased::any_cast<SelfType>(other));
+                return std::nullopt;
             }
 
-            constexpr Multipliable multiply(this const auto& erased, const Multipliable& other)
+            constexpr std::optional<Transformable> multiply(this const auto& erased, const Transformable& other)
             {
                 return erased.invoke(Multiply{}, other);
             }
@@ -38,7 +40,7 @@ namespace spacetree
 
     struct Node
     {
-        std::optional<details::Multipliable> transform_to(const Node& /*other*/) { return std::nullopt; }
+        std::optional<details::Transformable> transform_to(const Node& /*other*/) { return std::nullopt; }
     };
 
 }

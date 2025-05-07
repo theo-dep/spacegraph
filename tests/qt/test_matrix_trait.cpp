@@ -19,13 +19,14 @@ QMatrix4x4 create(float val)
 
 TEST_CASE("Matrix Trait multiply is successful", "[matrix_trait]")
 {
-    spacetree::details::Multipliable res = test(create(2), create(3));
-    REQUIRE(erased::is<QMatrix4x4>(res));
+    std::optional res = test(create(2), create(3));
+    REQUIRE(res);
+    REQUIRE(erased::is<QMatrix4x4>(*res));
 
-    std::println("qt: {}", QDebug::toString(erased::any_cast<QMatrix4x4>(res)).toStdString());
+    std::println("qt: {}", QDebug::toString(erased::any_cast<QMatrix4x4>(*res)).toStdString());
 }
 
 TEST_CASE("Matrix Trait multiply is not same type", "[matrix_trait]")
 {
-    REQUIRE_THROWS_AS(test(create(2), createFalse(3)), std::bad_cast);
+    REQUIRE(test(create(2), createFalse(3)) == std::nullopt);
 }
