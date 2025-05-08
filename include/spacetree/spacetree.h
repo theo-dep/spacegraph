@@ -3,7 +3,6 @@
 #include <erased/erased.h>
 
 #include <optional>
-#include <variant>
 
 template <typename T>
 struct matrix_trait
@@ -61,9 +60,9 @@ namespace spacetree
 
         template <typename T, typename... Args>
         constexpr Node(std::in_place_type_t<T>, Args&&... args)
-            : _transform(std::in_place_type<details::Transformable>, std::in_place_type<T>, std::forward<Args>(args)...)
+            : _transform(std::in_place, std::in_place_type<T>, std::forward<Args>(args)...)
         {
-            transformable().set_identity();
+            _transform->set_identity();
         }
 
         template <typename T>
@@ -80,20 +79,13 @@ namespace spacetree
 
         constexpr std::optional<details::Transformable> transform_to(const Node& other) const
         {
-            if (_transform.index() == monostate_index)
-                return std::nullopt;
             if (std::addressof(other) == this)
-                return transformable();
+                return _transform;
             return std::nullopt;
         }
 
-    protected:
-        constexpr details::Transformable& transformable() { return std::get<details::Transformable>(_transform); }
-        constexpr const details::Transformable& transformable() const { return std::get<details::Transformable>(_transform); }
-
     private:
-        static constexpr std::size_t monostate_index{ 0 };
-        std::variant<std::monostate, details::Transformable> _transform;
+        std::optional<details::Transformable> _transform{ std::nullopt };
     };
 
 }
