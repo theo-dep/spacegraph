@@ -10,12 +10,22 @@
 
 TYPE identity();
 
+TEST_CASE("Transformation to another node failure", "[transform_node]")
+{
+    SECTION("Node has no parent with no Transformable object specified, get the transformation between this node and itself",
+            "Transformation is invalid")
+    {
+        spacetree::Node node;
+        REQUIRE(!node.transform_to(node));
+    }
+}
+
 TEST_CASE("Transformation to another node successful", "[transform_node]")
 {
-    SECTION("Node has no parent, get the transformation between this node and itself",
+    SECTION("Node has no parent but constructed with a Transformable object, get the transformation between this node and itself",
             "Transformation is valid, it is an identity transformation")
     {
-        spacetree::Node node(TYPE{});
+        spacetree::Node node(std::in_place_type<TYPE>);
         REQUIRE(node.transform_to(node));
         REQUIRE(erased::any_cast<TYPE>(*node.transform_to(node)) == identity());
     }
