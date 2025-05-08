@@ -58,11 +58,17 @@ namespace spacetree
     {
         constexpr Node() = default;
 
+        template <typename T>
+        constexpr Node(std::in_place_type_t<T>)
+            : _transform(std::in_place, std::in_place_type<T>)
+        {
+            _transform->set_identity();
+        }
+
         template <typename T, typename... Args>
         constexpr Node(std::in_place_type_t<T>, Args&&... args)
             : _transform(std::in_place, std::in_place_type<T>, std::forward<Args>(args)...)
         {
-            _transform->set_identity();
         }
 
         template <typename T>
