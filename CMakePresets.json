@@ -4,10 +4,18 @@
         {
             "name": "vcpkg",
             "generator": "Ninja",
-            "binaryDir": "${sourceDir}/build",
+            "binaryDir": "${sourceDir}/build/release",
             "cacheVariables": {
                 "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
                 "ERASED_DIR": "${sourceDir}/erased"
+            }
+        },
+        {
+            "name": "vcpkg-debug",
+            "inherits": "vcpkg",
+            "binaryDir": "${sourceDir}/build/debug",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
             }
         }
     ],

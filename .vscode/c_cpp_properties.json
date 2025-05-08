@@ -5,9 +5,9 @@
             "includePath": [
                 "${workspaceFolder}/include",
                 "${workspaceFolder}/tests",
-                "${workspaceFolder}/build/_deps/erased-src/erased/include",
-                "${workspaceFolder}/build/vcpkg_installed/x64-linux/include",
-                "${workspaceFolder}/build/vcpkg_installed/x64-linux/include/Qt6"
+                "${workspaceFolder}/build/**/_deps/erased-src/erased/include",
+                "${workspaceFolder}/build/**/vcpkg_installed/x64-linux/include",
+                "${workspaceFolder}/build/**/vcpkg_installed/x64-linux/include/Qt6"
             ],
             "cStandard": "c23",
             "cppStandard": "c++23"
