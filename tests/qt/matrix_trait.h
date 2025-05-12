@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spacetree/spacetree_amalgamated.h>
+#include <spacetree/spacetree.h>
 
 #include <QtGui/QMatrix4x4>
 
@@ -17,3 +17,5 @@ struct matrix_trait<QMatrix4x4>
         return self * other;
     }
 };
+
+using qtNode = spacetree::Node<QMatrix4x4>;

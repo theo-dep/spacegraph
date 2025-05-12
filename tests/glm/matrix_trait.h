@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spacetree/spacetree_amalgamated.h>
+#include <spacetree/spacetree.h>
 
 #include <glm/glm.hpp>
 
@@ -17,3 +17,5 @@ struct matrix_trait<glm::mat4>
         return glm::matrixCompMult(self, other);
     }
 };
+
+using glmNode = spacetree::Node<glm::mat4>;

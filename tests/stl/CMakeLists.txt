@@ -6,6 +6,4 @@ add_executable(tests_stl
 
 target_compile_definitions(tests_stl PRIVATE TYPE=StlMatrix4)
 
-add_dependencies(tests_stl generate_amalgamated)
-
 catch_discover_tests(tests_stl)

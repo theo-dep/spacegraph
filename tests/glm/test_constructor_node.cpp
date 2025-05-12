@@ -4,10 +4,10 @@
 
 TEST_CASE("Construct a node from in place constructor", "[constructor_node]")
 {
-    spacetree::Node node(std::in_place_type<glm::mat4>, 1.f);
+    glmNode node(std::in_place, 1.f);
 }
 
 TEST_CASE("Construct a node from copy constructor", "[constructor_node]")
 {
-    spacetree::Node node(glm::mat4(1));
+    glmNode node(glm::mat4(1));
 }
