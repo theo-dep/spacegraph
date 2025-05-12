@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spacetree/spacetree_amalgamated.h>
+#include <spacetree/spacetree.h>
 
 #include <array>
 #include <valarray>
@@ -64,3 +64,5 @@ struct matrix_trait<StlMatrix4>
         return self * other;
     }
 };
+
+using stlNode = spacetree::Node<StlMatrix4>;

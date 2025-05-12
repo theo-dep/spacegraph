@@ -6,10 +6,10 @@
 
 TEST_CASE("Construct a node from in place constructor", "[constructor_node]")
 {
-    spacetree::Node node(std::in_place_type<QMatrix4x4>, QTransform());
+    qtNode node(std::in_place, QTransform());
 }
 
 TEST_CASE("Construct a node from copy constructor", "[constructor_node]")
 {
-    spacetree::Node node(QMatrix4x4{});
+    qtNode node(QMatrix4x4{});
 }
