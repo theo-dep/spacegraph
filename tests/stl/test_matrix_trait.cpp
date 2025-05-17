@@ -4,13 +4,13 @@
 
 TEST_CASE("Matrix Trait set_identity is successful", "[matrix_trait]")
 {
-    StlMatrix4 res(2);
-    matrix_trait<StlMatrix4>::set_identity(res);
-    REQUIRE(res == StlMatrix4(1));
+    stl::Matrix4 res(2);
+    set_identity(spacetree::tag, res);
+    REQUIRE(res == stl::Matrix4(1));
 }
 
 TEST_CASE("Matrix Trait multiply is successful", "[matrix_trait]")
 {
-    StlMatrix4 res = matrix_trait<StlMatrix4>::multiply(StlMatrix4(2), StlMatrix4(3));
-    REQUIRE(res == StlMatrix4(6));
+    stl::Matrix4 res = multiply(spacetree::tag, stl::Matrix4(2), stl::Matrix4(3));
+    REQUIRE(res == stl::Matrix4(6));
 }

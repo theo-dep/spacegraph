@@ -1,56 +1,232 @@
 #pragma once
 
 #include <concepts>
+#include <functional>
 #include <optional>
+#include <tuple>
+#include <utility>
 
-template <typename T>
-struct matrix_trait
-{
-    // Must be implemented for your own matrix type
-    // static void set_identity(T& self);
-    // static T multiply(const T& self, const T& other);
-};
+// Must be implemented for your own matrix type
+// void set_identity(spacetree::tag_t, T& self);
+// T multiply(spacetree::tag_t, const T& self, const T& other);
 
 namespace spacetree
 {
+
+    struct tag_t
+    {
+        explicit tag_t() = default;
+    };
+
+    inline constexpr tag_t tag{};
 
     namespace details
     {
 
         template <typename T>
-        concept IdentityInitializable = requires(T m) {
-            { matrix_trait<T>::set_identity(m) } -> std::same_as<void>;
+        concept Transformable = requires(T m) {
+            { set_identity(tag, m) } -> std::same_as<void>;
+            { multiply(tag, m, std::declval<T>()) } -> std::convertible_to<T>;
         };
-
-        template <typename T>
-        concept Multipliable = requires(T m) {
-            { matrix_trait<T>::multiply(m, std::declval<T>()) } -> std::convertible_to<T>;
-        };
-
-        template <typename T>
-        concept Transformable = IdentityInitializable<T> && Multipliable<T>;
 
     }
 
-    template <details::Transformable T>
+    // void set_identity(tag_t, details::Transformable auto&);
+    // auto multiply(tag_t, const details::Transformable auto&, const details::Transformable auto&);
+
+    namespace details
+    {
+
+        template <Transformable T>
+        constexpr auto pointer_cast(void* ptr) { return static_cast<T*>(ptr); }
+
+        template <Transformable T>
+        constexpr auto pointer_cast(const void* ptr) { return static_cast<const T*>(ptr); }
+
+        struct Destroy;
+        struct Copy;
+        struct Move;
+        struct SetIdentity;
+        struct Multiply;
+
+        using TransformableVtable = std::tuple<Destroy, Copy, Move, SetIdentity, Multiply>;
+
+        struct TransformableErasure
+        {
+            template <Transformable T>
+            constexpr TransformableErasure(T x);
+
+            template <Transformable T>
+            constexpr TransformableErasure(std::in_place_type_t<T>);
+
+            template <Transformable T, typename... Args>
+            constexpr TransformableErasure(std::in_place_type_t<T>, Args&&... args);
+
+            constexpr ~TransformableErasure();
+            constexpr TransformableErasure(const TransformableErasure& other);
+            constexpr TransformableErasure(TransformableErasure&& other);
+            constexpr TransformableErasure& operator=(const TransformableErasure& other);
+            constexpr TransformableErasure& operator=(TransformableErasure&& other);
+
+            constexpr void set_identity() const;
+
+            constexpr TransformableErasure multiply(const TransformableErasure& other) const;
+
+            template <Transformable T>
+            constexpr auto cast() const;
+
+        private:
+            std::reference_wrapper<const TransformableVtable> _vtable;
+            void* _state{ nullptr };
+        };
+
+        struct Destroy
+        {
+            void (*function)(void*);
+        };
+        struct Copy
+        {
+            void* (*function)(void*);
+        };
+        struct Move
+        {
+            void* (*function)(void*);
+        };
+        struct SetIdentity
+        {
+            void (*function)(void*);
+        };
+        struct Multiply
+        {
+            TransformableErasure (*function)(const void*, const void*);
+        };
+
+        struct TransformableVtableFactory
+        {
+            template <Transformable T>
+            static constexpr const TransformableVtable& get()
+            {
+                static constexpr TransformableVtable vtable{ make<T>() };
+                return vtable;
+            }
+
+        private:
+            template <Transformable T>
+            static constexpr TransformableVtable make()
+            {
+                return {
+                    Destroy{ [](void* ptr) {
+                        delete pointer_cast<T>(ptr);
+                    } },
+                    Copy{ [](void* ptr) -> void* {
+                        return new T(*pointer_cast<T>(ptr));
+                    } },
+                    Move{ [](void* ptr) -> void* {
+                        return new T(std::move(*pointer_cast<T>(ptr)));
+                    } },
+                    SetIdentity{ [](void* ptr) {
+                        set_identity(tag, *pointer_cast<T>(ptr));
+                    } },
+                    Multiply{ [](const void* ptr, const void* other) -> TransformableErasure {
+                        return TransformableErasure{ multiply(tag, *pointer_cast<T>(ptr), *pointer_cast<T>(other)) };
+                    } }
+                };
+            }
+        };
+
+        template <Transformable T>
+        constexpr TransformableErasure::TransformableErasure(T x)
+            : TransformableErasure(std::in_place_type<T>, std::forward<T>(x))
+        {
+        }
+
+        template <Transformable T>
+        constexpr TransformableErasure::TransformableErasure(std::in_place_type_t<T>)
+            : TransformableErasure(T{})
+        {
+        }
+
+        template <Transformable T, typename... Args>
+        constexpr TransformableErasure::TransformableErasure(std::in_place_type_t<T>, Args&&... args)
+            : _vtable{ TransformableVtableFactory::get<std::decay_t<T>>() }
+            , _state{ new T(std::forward<Args>(args)...) }
+        {
+        }
+
+        constexpr TransformableErasure::~TransformableErasure()
+        {
+            std::get<Destroy>(_vtable.get()).function(_state);
+        }
+
+        constexpr TransformableErasure::TransformableErasure(const TransformableErasure& other)
+            : _vtable{ other._vtable }
+            , _state{ std::get<Copy>(other._vtable.get()).function(other._state) }
+        {
+        }
+
+        constexpr TransformableErasure::TransformableErasure(TransformableErasure&& other)
+            : _vtable{ other._vtable }
+            , _state{ std::get<Move>(other._vtable.get()).function(other._state) }
+        {
+        }
+
+        constexpr TransformableErasure& TransformableErasure::operator=(const TransformableErasure& other)
+        {
+            std::get<Destroy>(_vtable.get()).function(_state);
+            _vtable = other._vtable;
+            _state = std::get<Copy>(other._vtable.get()).function(other._state);
+            return *this;
+        }
+
+        constexpr TransformableErasure& TransformableErasure::operator=(TransformableErasure&& other)
+        {
+            std::get<Destroy>(_vtable.get()).function(_state);
+            _vtable = other._vtable;
+            _state = std::get<Move>(other._vtable.get()).function(other._state);
+            return *this;
+        }
+
+        constexpr void TransformableErasure::set_identity() const
+        {
+            std::get<SetIdentity>(_vtable.get()).function(_state);
+        }
+
+        constexpr TransformableErasure TransformableErasure::multiply(const TransformableErasure& other) const
+        {
+            return std::get<Multiply>(_vtable.get()).function(_state, other._state);
+        }
+
+        template <Transformable T>
+        constexpr auto TransformableErasure::cast() const
+        {
+            static constexpr const TransformableVtable& vtable{ TransformableVtableFactory::get<std::decay_t<T>>() };
+            return std::addressof(_vtable.get()) == std::addressof(vtable)
+                       ? pointer_cast<T>(std::as_const(_state))
+                       : nullptr;
+        }
+
+    }
+
     struct Node
     {
         constexpr Node() = default;
 
-        constexpr Node(std::in_place_t)
-            : _transform(T{})
+        template <details::Transformable T>
+        constexpr Node(std::in_place_type_t<T>)
+            : _transform(std::in_place, std::in_place_type<T>)
         {
-            matrix_trait<T>::set_identity(*_transform);
+            _transform->set_identity();
         }
 
-        template <typename... Args>
-        constexpr Node(std::in_place_t, Args&&... args)
-            : _transform(std::in_place, std::forward<Args>(args)...)
+        template <details::Transformable T, typename... Args>
+        constexpr Node(std::in_place_type_t<T>, Args&&... args)
+            : _transform(std::in_place, std::in_place_type<T>, std::forward<Args>(args)...)
         {
         }
 
+        template <details::Transformable T>
         constexpr Node(T x)
-            : Node{ std::in_place, std::forward<T>(x) }
+            : Node{ std::in_place_type<T>, std::forward<T>(x) }
         {
         }
 
@@ -60,15 +236,18 @@ namespace spacetree
         constexpr Node& operator=(const Node&) = default;
         constexpr Node& operator=(Node&&) = default;
 
+        template <details::Transformable T>
         constexpr std::optional<T> transform_to(const Node& other) const
         {
+            if (!_transform)
+                return std::nullopt;
             if (std::addressof(other) == this)
-                return _transform;
+                return *_transform->cast<T>();
             return std::nullopt;
         }
 
     private:
-        std::optional<T> _transform{ std::nullopt };
+        std::optional<details::TransformableErasure> _transform{ std::nullopt };
     };
 
 }

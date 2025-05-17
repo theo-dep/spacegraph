@@ -4,6 +4,6 @@ add_executable(tests_stl
     test_transformation_node.cpp
 )
 
-target_compile_definitions(tests_stl PRIVATE TYPE=StlMatrix4)
+target_compile_definitions(tests_stl PRIVATE TYPE=stl::Matrix4)
 
 catch_discover_tests(tests_stl)

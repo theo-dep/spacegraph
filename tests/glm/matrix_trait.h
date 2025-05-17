@@ -1,21 +1,26 @@
 #pragma once
 
-#include <spacetree/spacetree.h>
-
 #include <glm/glm.hpp>
 
-template <>
-struct matrix_trait<glm::mat4>
+// test inside spacetree namespace
+namespace spacetree
 {
-    static void set_identity(glm::mat4& self)
+    struct tag_t;
+    void set_identity(spacetree::tag_t, glm::mat4& self);
+    glm::mat4 multiply(spacetree::tag_t, const glm::mat4& self, const glm::mat4& other);
+}
+
+#include <spacetree/spacetree.h>
+
+namespace spacetree
+{
+    inline void set_identity(spacetree::tag_t, glm::mat4& self)
     {
         self = glm::mat4(1);
     }
 
-    static glm::mat4 multiply(const glm::mat4& self, const glm::mat4& other)
+    inline glm::mat4 multiply(spacetree::tag_t, const glm::mat4& self, const glm::mat4& other)
     {
         return glm::matrixCompMult(self, other);
     }
-};
-
-using glmNode = spacetree::Node<glm::mat4>;
+}

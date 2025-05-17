@@ -1,15 +1,15 @@
 #include "stl_matrix_trait.h"
 #include "test_transform_node.h"
 
-StlMatrix4 identity()
+stl::Matrix4 identity()
 {
-    return StlMatrix4(1);
+    return stl::Matrix4(1);
 }
 
-StlMatrix4 default_value()
+stl::Matrix4 default_value()
 {
-    return StlMatrix4(std::array{ 1.f, 0.f, 0.f, 0.f,
-                                  0.f, 2.f, 0.f, 0.f,
-                                  0.f, 0.f, 3.f, 0.f,
-                                  1.f, 2.f, 3.f, 0.f });
+    return stl::Matrix4(std::array{ 1.f, 0.f, 0.f, 0.f,
+                                    0.f, 2.f, 0.f, 0.f,
+                                    0.f, 0.f, 3.f, 0.f,
+                                    1.f, 2.f, 3.f, 0.f });
 }
