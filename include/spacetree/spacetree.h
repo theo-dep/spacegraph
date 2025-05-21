@@ -29,14 +29,6 @@ namespace spacetree
             { multiply(tag, m, std::declval<T>()) } -> std::convertible_to<T>;
         };
 
-    }
-
-    // void set_identity(tag_t, details::Transformable auto&);
-    // auto multiply(tag_t, const details::Transformable auto&, const details::Transformable auto&);
-
-    namespace details
-    {
-
         template <Transformable T>
         constexpr auto pointer_cast(void* ptr) { return static_cast<T*>(ptr); }
 
@@ -86,7 +78,7 @@ namespace spacetree
         };
         struct Copy
         {
-            void* (*function)(void*);
+            void* (*function)(const void*);
         };
         struct Move
         {
@@ -101,6 +93,18 @@ namespace spacetree
             TransformableErasure (*function)(const void*, const void*);
         };
 
+        template <Transformable T>
+        static constexpr void set_identity(void* ptr)
+        {
+            set_identity(tag, *pointer_cast<T>(ptr));
+        }
+
+        template <Transformable T>
+        static constexpr TransformableErasure multiply(const void* ptr, const void* other)
+        {
+            return TransformableErasure{ multiply(tag, *pointer_cast<T>(ptr), *pointer_cast<T>(other)) };
+        }
+
         struct TransformableVtableFactory
         {
             template <Transformable T>
@@ -114,23 +118,17 @@ namespace spacetree
             template <Transformable T>
             static constexpr TransformableVtable make()
             {
-                return {
-                    Destroy{ [](void* ptr) {
-                        delete pointer_cast<T>(ptr);
-                    } },
-                    Copy{ [](void* ptr) -> void* {
-                        return new T(*pointer_cast<T>(ptr));
-                    } },
-                    Move{ [](void* ptr) -> void* {
-                        return new T(std::move(*pointer_cast<T>(ptr)));
-                    } },
-                    SetIdentity{ [](void* ptr) {
-                        set_identity(tag, *pointer_cast<T>(ptr));
-                    } },
-                    Multiply{ [](const void* ptr, const void* other) -> TransformableErasure {
-                        return TransformableErasure{ multiply(tag, *pointer_cast<T>(ptr), *pointer_cast<T>(other)) };
-                    } }
-                };
+                return { Destroy{ [](void* ptr) constexpr {
+                             delete pointer_cast<T>(ptr);
+                         } },
+                         Copy{ [](const void* ptr) constexpr -> void* {
+                             return new T(*pointer_cast<T>(ptr));
+                         } },
+                         Move{ [](void* ptr) constexpr -> void* {
+                             return new T(std::move(*pointer_cast<T>(ptr)));
+                         } },
+                         SetIdentity{ set_identity<T> },
+                         Multiply{ multiply<T> } };
             }
         };
 

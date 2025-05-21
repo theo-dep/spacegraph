@@ -1,5 +1,7 @@
 #pragma once
 
+#include <spacetree/spacetree.h>
+
 #include <array>
 #include <valarray>
 
@@ -52,20 +54,7 @@ namespace stl
     };
 }
 
-namespace spacetree
-{
-    struct tag_t;
-}
-
 // test inside custom namespace
-namespace stl
-{
-    void set_identity(::spacetree::tag_t, Matrix4& self);
-    Matrix4 multiply(::spacetree::tag_t, const Matrix4& self, const Matrix4& other);
-}
-
-#include <spacetree/spacetree.h>
-
 namespace stl
 {
     inline void set_identity(::spacetree::tag_t, Matrix4& self)
