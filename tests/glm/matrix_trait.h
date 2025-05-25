@@ -1,18 +1,18 @@
 #pragma once
 
-#include <spacetree/spacetree.h>
+#include <spacegraph/spacegraph.h>
 
 #include <glm/glm.hpp>
 
-// test inside spacetree namespace
-namespace spacetree
+// test inside spacegraph namespace
+namespace spacegraph
 {
-    inline void set_identity(spacetree::tag_t, glm::mat4& self)
+    inline void set_identity(spacegraph::tag_t, glm::mat4& self)
     {
         self = glm::mat4(1);
     }
 
-    inline glm::mat4 multiply(spacetree::tag_t, const glm::mat4& self, const glm::mat4& other)
+    inline glm::mat4 multiply(spacegraph::tag_t, const glm::mat4& self, const glm::mat4& other)
     {
         return glm::matrixCompMult(self, other);
     }

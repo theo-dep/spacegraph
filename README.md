@@ -1,4 +1,4 @@
-# SpaceTree
+# SpaceGraph
 
 C++ header-only spatial node implementation designed for any 3D applications which have matrix 4x4 transformations.
 

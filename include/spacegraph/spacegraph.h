@@ -7,10 +7,10 @@
 #include <utility>
 
 // Must be implemented for your own matrix type
-// void set_identity(spacetree::tag_t, T& self);
-// T multiply(spacetree::tag_t, const T& self, const T& other);
+// void set_identity(spacegraph::tag_t, T& self);
+// T multiply(spacegraph::tag_t, const T& self, const T& other);
 
-namespace spacetree
+namespace spacegraph
 {
 
     struct tag_t

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spacetree/spacetree.h>
+#include <spacegraph/spacegraph.h>
 
 #include <array>
 #include <valarray>
@@ -57,12 +57,12 @@ namespace stl
 // test inside custom namespace
 namespace stl
 {
-    inline void set_identity(::spacetree::tag_t, Matrix4& self)
+    inline void set_identity(::spacegraph::tag_t, Matrix4& self)
     {
         self.set_identity();
     }
 
-    inline Matrix4 multiply(::spacetree::tag_t, const Matrix4& self, const Matrix4& other)
+    inline Matrix4 multiply(::spacegraph::tag_t, const Matrix4& self, const Matrix4& other)
     {
         return self * other;
     }
