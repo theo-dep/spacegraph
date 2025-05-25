@@ -35,13 +35,7 @@ namespace spacegraph
         template <Transformable T>
         constexpr auto pointer_cast(const void* ptr) { return static_cast<const T*>(ptr); }
 
-        struct Destroy;
-        struct Copy;
-        struct Move;
-        struct SetIdentity;
-        struct Multiply;
-
-        using TransformableVtable = std::tuple<Destroy, Copy, Move, SetIdentity, Multiply>;
+        struct TransformableVtable;
 
         struct TransformableErasure
         {
@@ -91,6 +85,11 @@ namespace spacegraph
         struct Multiply
         {
             TransformableErasure (*function)(const void*, const void*);
+        };
+
+        struct TransformableVtable : std::tuple<Destroy, Copy, Move, SetIdentity, Multiply>
+        {
+            using std::tuple<Destroy, Copy, Move, SetIdentity, Multiply>::tuple;
         };
 
         template <Transformable T>
