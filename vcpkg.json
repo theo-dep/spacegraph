@@ -1,6 +1,8 @@
 {
+  "builtin-baseline": "3bbc2809d3625cb83a0d7cbd413bd6ad769d46d4",
   "dependencies": [
     "glm",
+    "mdspan",
     {
       "name": "qtbase",
       "default-features": false,

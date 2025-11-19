@@ -1,20 +1,27 @@
 
-include_directories(
-  ${CMAKE_SOURCE_DIR}/include
-  ${CMAKE_SOURCE_DIR}/tests
+add_executable(spacegraph_tests
+    test_constructor_node.cpp
+    test_matrix_trait.cpp
+    test_transform_node.cpp
 )
 
+target_include_directories(spacegraph_tests PRIVATE ../include)
+
 if(MSVC)
-    add_compile_options(/W4 /WX)
+    target_compile_options(spacegraph_tests PRIVATE /W4 /WX)
 else()
-    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+    target_compile_options(spacegraph_tests PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
-link_libraries(Catch2::Catch2 Catch2::Catch2WithMain)
+target_link_libraries(spacegraph_tests PRIVATE
+    Catch2::Catch2 Catch2::Catch2WithMain
+    glm::glm-header-only
+    Qt6::Core Qt6::Gui
+)
 
-include(CTest)
+if(NOT HAVE_MDSPAN)
+    target_link_libraries(spacegraph_tests PRIVATE std::mdspan)
+endif()
+
 include(Catch)
-
-add_subdirectory(glm)
-add_subdirectory(qt)
-add_subdirectory(stl)
+catch_discover_tests(spacegraph_tests)

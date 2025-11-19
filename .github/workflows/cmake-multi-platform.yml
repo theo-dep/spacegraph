@@ -2,9 +2,9 @@ name: CMake on multiple platforms
 
 on:
   push:
-    branches: [ "develop", "main" ]
+    branches: ["develop", "main"]
   pull_request:
-    branches: [ "develop", "main" ]
+    branches: ["develop", "main"]
 
 jobs:
   build:
@@ -39,25 +39,30 @@ jobs:
             compiler: cl
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - uses: lukka/get-cmake@latest
+      - uses: lukka/get-cmake@latest
 
-    - name: Setup anew (or from cache) vcpkg (and does not build any package)
-      uses: lukka/run-vcpkg@v11
-      with:
-        vcpkgJsonGlob: 'vcpkg.json'
+      - name: Setup anew (or from cache) vcpkg (and does not build any package)
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgJsonGlob: "vcpkg.json"
 
-    - name: Install macOS build dependencies
-      if: runner.os == 'macOS'
-      run: |
-        brew update
-        brew install autoconf automake autoconf-archive libtool
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y autoconf autoconf-archive automake libtool
 
-    - name: Run CMake consuming CMakePreset.json and run vcpkg to build packages
-      uses: lukka/run-cmake@v10
-      with:
-        configurePreset: vcpkg
-        configurePresetAdditionalArgs: "['-DCMAKE_CXX_COMPILER=${{ matrix.compiler }}']"
-        buildPreset: vcpkg
-        testPreset: vcpkg
+      - name: Install macOS build dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install autoconf automake autoconf-archive libtool
+
+      - name: Run CMake consuming CMakePreset.json and run vcpkg to build packages
+        uses: lukka/run-cmake@v10
+        with:
+          configurePreset: vcpkg
+          configurePresetAdditionalArgs: "['-DCMAKE_CXX_COMPILER=${{ matrix.compiler }}']"
+          buildPreset: vcpkg
+          testPreset: vcpkg

@@ -18,7 +18,7 @@ namespace spacegraph
         explicit tag_t() = default;
     };
 
-    inline constexpr tag_t tag{};
+    static constexpr tag_t tag{};
 
     namespace details
     {
@@ -66,30 +66,13 @@ namespace spacegraph
             void* _state{ nullptr };
         };
 
-        struct Destroy
+        struct TransformableVtable
         {
-            void (*function)(void*);
-        };
-        struct Copy
-        {
-            void* (*function)(const void*);
-        };
-        struct Move
-        {
-            void* (*function)(void*);
-        };
-        struct SetIdentity
-        {
-            void (*function)(void*);
-        };
-        struct Multiply
-        {
-            TransformableErasure (*function)(const void*, const void*);
-        };
-
-        struct TransformableVtable : std::tuple<Destroy, Copy, Move, SetIdentity, Multiply>
-        {
-            using std::tuple<Destroy, Copy, Move, SetIdentity, Multiply>::tuple;
+            void (*destroy)(void*);
+            void* (*copy)(const void*);
+            void* (*move)(void*);
+            void (*set_identity)(void*);
+            TransformableErasure (*multiply)(const void*, const void*);
         };
 
         template <Transformable T>
@@ -117,17 +100,19 @@ namespace spacegraph
             template <Transformable T>
             static constexpr TransformableVtable make()
             {
-                return { Destroy{ [](void* ptr) constexpr {
-                             delete pointer_cast<T>(ptr);
-                         } },
-                         Copy{ [](const void* ptr) constexpr -> void* {
-                             return new T(*pointer_cast<T>(ptr));
-                         } },
-                         Move{ [](void* ptr) constexpr -> void* {
-                             return new T(std::move(*pointer_cast<T>(ptr)));
-                         } },
-                         SetIdentity{ set_identity<T> },
-                         Multiply{ multiply<T> } };
+                return {
+                    .destroy{ [](void* ptr) constexpr {
+                        delete pointer_cast<T>(ptr);
+                    } },
+                    .copy{ [](const void* ptr) constexpr -> void* {
+                        return new T(*pointer_cast<T>(ptr));
+                    } },
+                    .move{ [](void* ptr) constexpr -> void* {
+                        return new T(std::move(*pointer_cast<T>(ptr)));
+                    } },
+                    .set_identity{ set_identity<T> },
+                    .multiply{ multiply<T> }
+                };
             }
         };
 
@@ -152,45 +137,45 @@ namespace spacegraph
 
         constexpr TransformableErasure::~TransformableErasure()
         {
-            std::get<Destroy>(_vtable.get()).function(_state);
+            _vtable.get().destroy(_state);
         }
 
         constexpr TransformableErasure::TransformableErasure(const TransformableErasure& other)
             : _vtable{ other._vtable }
-            , _state{ std::get<Copy>(other._vtable.get()).function(other._state) }
+            , _state{ other._vtable.get().copy(other._state) }
         {
         }
 
         constexpr TransformableErasure::TransformableErasure(TransformableErasure&& other)
             : _vtable{ other._vtable }
-            , _state{ std::get<Move>(other._vtable.get()).function(other._state) }
+            , _state{ other._vtable.get().move(other._state) }
         {
         }
 
         constexpr TransformableErasure& TransformableErasure::operator=(const TransformableErasure& other)
         {
-            std::get<Destroy>(_vtable.get()).function(_state);
+            _vtable.get().destroy(_state);
             _vtable = other._vtable;
-            _state = std::get<Copy>(other._vtable.get()).function(other._state);
+            _state = other._vtable.get().copy(other._state);
             return *this;
         }
 
         constexpr TransformableErasure& TransformableErasure::operator=(TransformableErasure&& other)
         {
-            std::get<Destroy>(_vtable.get()).function(_state);
+            _vtable.get().destroy(_state);
             _vtable = other._vtable;
-            _state = std::get<Move>(other._vtable.get()).function(other._state);
+            _state = other._vtable.get().move(other._state);
             return *this;
         }
 
         constexpr void TransformableErasure::set_identity() const
         {
-            std::get<SetIdentity>(_vtable.get()).function(_state);
+            _vtable.get().set_identity(_state);
         }
 
         constexpr TransformableErasure TransformableErasure::multiply(const TransformableErasure& other) const
         {
-            return std::get<Multiply>(_vtable.get()).function(_state, other._state);
+            return _vtable.get().multiply(_state, other._state);
         }
 
         template <Transformable T>
