@@ -8,61 +8,117 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.os }}-${{ matrix.compiler }}
+    permissions:
+      packages: write
+
+    env:
+      USERNAME: theo-dep
+      #VCPKG_ROOT: ${{ env.VCPKG_INSTALLATION_ROOT }}/vcpkg
+      FEED_URL: https://nuget.pkg.github.com/theo-dep/index.json
+      VCPKG_BINARY_SOURCES: "clear;nuget,https://nuget.pkg.github.com/theo-dep/index.json,readwrite"
+
+    name: ${{ matrix.os }}-${{ matrix.cxx_compiler }}
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        compiler: [g++, clang++, cl]
-        # Add more build types (Release, Debug, RelWithDebInfo, etc.) here
+        cxx_compiler: [g++, clang++, cl]
         include:
           - os: windows-latest
-            compiler: cl
+            cxx_compiler: cl
+            c_compiler: cl
+            mono: ""
           - os: windows-latest
-            compiler: clang++
+            cxx_compiler: clang++
+            c_compiler: clang
+            mono: ""
           - os: ubuntu-latest
-            compiler: g++
+            cxx_compiler: g++
+            c_compiler: gcc
+            mono: mono
           - os: ubuntu-latest
-            compiler: clang++
+            cxx_compiler: clang++
+            c_compiler: clang
+            mono: mono
           - os: macos-latest
-            compiler: clang++
+            cxx_compiler: clang++
+            c_compiler: clang
+            mono: mono
         exclude:
           - os: windows-latest
-            compiler: g++
+            cxx_compiler: g++
           - os: ubuntu-latest
-            compiler: cl
+            cxx_compiler: cl
           - os: macos-latest
-            compiler: g++
+            cxx_compiler: g++
           - os: macos-latest
-            compiler: cl
+            cxx_compiler: cl
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: lukka/get-cmake@latest
+      - name: Add vcpkg to PATH
+        shell: bash
+        run: |
+          echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> $GITHUB_ENV
+          echo "$VCPKG_INSTALLATION_ROOT" >> "$GITHUB_PATH"
 
-      - name: Setup anew (or from cache) vcpkg (and does not build any package)
-        uses: lukka/run-vcpkg@v11
-        with:
-          vcpkgJsonGlob: "vcpkg.json"
+      - name: Bootstrap vcpkg
+        shell: bash
+        run: |
+          git -C $VCPKG_ROOT fetch
+          $VCPKG_ROOT/bootstrap-vcpkg.sh
+
+      - name: Install CMake and Ninja
+        uses: lukka/get-cmake@latest
 
       - name: Install Linux build dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get install -y autoconf autoconf-archive automake libtool
+          sudo apt-get install -y mono-complete autoconf autoconf-archive automake libtool
 
       - name: Install macOS build dependencies
         if: runner.os == 'macOS'
         run: |
           brew update
-          brew install autoconf automake autoconf-archive libtool
+          brew install mono autoconf automake autoconf-archive libtool
 
-      - name: Run CMake consuming CMakePreset.json and run vcpkg to build packages
+      - name: Add NuGet sources
+        shell: bash
+        run: |
+          ${{ matrix.mono }} `vcpkg fetch nuget | tail -n 1` \
+            sources add \
+            -Source "${{ env.FEED_URL }}" \
+            -StorePasswordInClearText \
+            -Name GitHubPackages \
+            -UserName "${{ env.USERNAME }}" \
+            -Password "${{ secrets.GITHUB_TOKEN }}"
+          ${{ matrix.mono }} `vcpkg fetch nuget | tail -n 1` \
+            setapikey "${{ secrets.GITHUB_TOKEN }}" \
+            -Source "${{ env.FEED_URL }}"
+
+      - name: Configure and Run CMake
         uses: lukka/run-cmake@v10
         with:
           configurePreset: vcpkg
-          configurePresetAdditionalArgs: "['-DCMAKE_CXX_COMPILER=${{ matrix.compiler }}']"
+          configurePresetAdditionalArgs: "['-DCMAKE_CXX_COMPILER=${{ matrix.cxx_compiler }}', '-DCMAKE_C_COMPILER=${{ matrix.c_compiler }}']"
           buildPreset: vcpkg
           testPreset: vcpkg
+          testPresetAdditionalArgs: "['--output-junit tests.xml']"
+
+      - name: Publish test results
+        uses: mikepenz/action-junit-report@v5
+        if: ${{ !cancelled() }}
+        with:
+          report_paths: build/vcpkg/tests.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.os }}-${{ matrix.cxx_compiler }}
+          path: build/vcpkg/tests.xml
+          retention-days: 7
