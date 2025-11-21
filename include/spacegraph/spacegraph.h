@@ -24,21 +24,75 @@ namespace spacegraph
     {
 
         template <typename T>
+        class optional_view
+        {
+        private:
+            T* _value{ nullptr };
+
+        public:
+            using value_type = T;
+
+            constexpr optional_view(T& value)
+                : _value{ std::addressof(value) }
+            {
+            }
+
+            constexpr optional_view(std::nullopt_t)
+                : _value{ nullptr }
+            {
+            }
+
+            template <typename U>
+                requires std::is_convertible_v<U*, T*> || std::is_same_v<U, T>
+            constexpr optional_view(const optional_view<U>& other)
+                : _value{ other._value }
+            {
+            }
+
+            constexpr ~optional_view() = default;
+
+            constexpr optional_view(T&&) = delete;
+            constexpr optional_view(std::nullptr_t) = delete;
+            constexpr optional_view(optional_view<T>&&) = delete;
+            constexpr optional_view<T>& operator=(const optional_view<T>&) = delete;
+            constexpr optional_view<T>& operator=(optional_view<T>&&) = delete;
+
+            constexpr T* operator->() { return _value; }
+            constexpr const T* operator->() const { return _value; }
+
+            constexpr T& operator*() { return *_value; }
+            constexpr const T& operator*() const { return *_value; }
+
+            constexpr T& value() { return *_value; }
+            constexpr const T& value() const { return *_value; }
+
+            constexpr bool has_value() const { return _value; }
+            constexpr operator bool() const { return _value; }
+
+            constexpr void reset() noexcept { _value = nullptr; }
+        };
+
+        template <typename T>
         concept Transformable = requires(T m) {
             { set_identity(tag, m) } -> std::same_as<void>;
             { multiply(tag, m, std::declval<T>()) } -> std::convertible_to<T>;
         };
 
         template <Transformable T>
-        constexpr auto pointer_cast(void* ptr) { return static_cast<T*>(ptr); }
+        constexpr T& pointer_cast(void* ptr) { return *static_cast<T*>(ptr); }
 
         template <Transformable T>
-        constexpr auto pointer_cast(const void* ptr) { return static_cast<const T*>(ptr); }
+        constexpr const T& pointer_cast(const void* ptr) { return *static_cast<const T*>(ptr); }
 
         struct TransformableVtable;
 
-        struct TransformableErasure
+        class TransformableErasure
         {
+        private:
+            std::reference_wrapper<const TransformableVtable> _vtable;
+            void* _state{ nullptr };
+
+        public:
             template <Transformable T>
             constexpr TransformableErasure(T x);
 
@@ -59,11 +113,7 @@ namespace spacegraph
             constexpr TransformableErasure multiply(const TransformableErasure& other) const;
 
             template <Transformable T>
-            constexpr auto cast() const;
-
-        private:
-            std::reference_wrapper<const TransformableVtable> _vtable;
-            void* _state{ nullptr };
+            constexpr optional_view<const T> cast() const;
         };
 
         struct TransformableVtable
@@ -78,13 +128,13 @@ namespace spacegraph
         template <Transformable T>
         static constexpr void set_identity(void* ptr)
         {
-            set_identity(tag, *pointer_cast<T>(ptr));
+            set_identity(tag, pointer_cast<T>(ptr));
         }
 
         template <Transformable T>
         static constexpr TransformableErasure multiply(const void* ptr, const void* other)
         {
-            return TransformableErasure{ multiply(tag, *pointer_cast<T>(ptr), *pointer_cast<T>(other)) };
+            return TransformableErasure{ multiply(tag, pointer_cast<T>(ptr), pointer_cast<T>(other)) };
         }
 
         struct TransformableVtableFactory
@@ -102,13 +152,13 @@ namespace spacegraph
             {
                 return {
                     .destroy{ [](void* ptr) constexpr {
-                        delete pointer_cast<T>(ptr);
+                        delete std::addressof(pointer_cast<T>(ptr));
                     } },
                     .copy{ [](const void* ptr) constexpr -> void* {
-                        return new T(*pointer_cast<T>(ptr));
+                        return new T(pointer_cast<T>(ptr));
                     } },
                     .move{ [](void* ptr) constexpr -> void* {
-                        return new T(std::move(*pointer_cast<T>(ptr)));
+                        return new T(std::move(pointer_cast<T>(ptr)));
                     } },
                     .set_identity{ set_identity<T> },
                     .multiply{ multiply<T> }
@@ -179,18 +229,22 @@ namespace spacegraph
         }
 
         template <Transformable T>
-        constexpr auto TransformableErasure::cast() const
+        constexpr optional_view<const T> TransformableErasure::cast() const
         {
             static constexpr const TransformableVtable& vtable{ TransformableVtableFactory::get<std::decay_t<T>>() };
-            return std::addressof(_vtable.get()) == std::addressof(vtable)
-                       ? pointer_cast<T>(std::as_const(_state))
-                       : nullptr;
+            if (std::addressof(_vtable.get()) == std::addressof(vtable))
+                return pointer_cast<T>(std::as_const(_state));
+            return std::nullopt;
         }
 
     }
 
-    struct Node
+    class Node
     {
+    private:
+        std::optional<details::TransformableErasure> _transform{ std::nullopt };
+
+    public:
         constexpr Node() = default;
 
         template <details::Transformable T>
@@ -219,17 +273,20 @@ namespace spacegraph
         constexpr Node& operator=(Node&&) = default;
 
         template <details::Transformable T>
-        constexpr std::optional<T> transform_to(const Node& other) const
+        constexpr details::optional_view<const T> transformable() const
+        {
+            return _transform->cast<T>();
+        }
+
+        template <details::Transformable T>
+        constexpr details::optional_view<const T> transform_to(const Node& other) const
         {
             if (!_transform)
                 return std::nullopt;
             if (std::addressof(other) == this)
-                return *_transform->cast<T>();
+                return transformable<T>();
             return std::nullopt;
         }
-
-    private:
-        std::optional<details::TransformableErasure> _transform{ std::nullopt };
     };
 
 }

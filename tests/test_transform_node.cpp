@@ -21,7 +21,7 @@ TEMPLATE_TEST_CASE("Transformation to another node successful", "[transform_node
     {
         spacegraph::Node node(std::in_place_type<TestType>);
         REQUIRE(node.transform_to<TestType>(node));
-        REQUIRE(*node.transform_to<TestType>(node) == identity<TestType>(1));
+        REQUIRE(*node.transform_to<TestType>(node) == identity<TestType>());
     }
 
     SECTION("Node has no parent but constructed with a default value Transformable object, get the transformation between this node and itself",

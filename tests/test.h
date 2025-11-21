@@ -7,7 +7,7 @@
 #include <QtGui/QTransform>
 
 template <typename T>
-T identity(float val);
+T identity(float val = 1);
 
 template <>
 inline glm::mat4 identity<glm::mat4>(float val)
