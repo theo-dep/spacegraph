@@ -3,7 +3,7 @@
 #include <concepts>
 #include <functional>
 #include <optional>
-#include <tuple>
+#include <type_traits>
 #include <utility>
 
 // Must be implemented for your own matrix type
@@ -43,7 +43,7 @@ namespace spacegraph
             }
 
             template <typename U>
-                requires std::is_convertible_v<U*, T*> || std::is_same_v<U, T>
+                requires std::is_convertible_v<U*, T*> or std::is_same_v<U, T>
             constexpr optional_view(const optional_view<U>& other)
                 : _value{ other._value }
             {
@@ -237,6 +237,74 @@ namespace spacegraph
             return std::nullopt;
         }
 
+        template <typename>
+        struct first_param;
+
+        template <typename R, typename Arg>
+        struct first_param<R (*)(Arg)>
+        {
+            using type = std::remove_cvref_t<Arg>;
+        };
+
+        template <typename R, typename C, typename Arg>
+        struct first_param<R (C::*)(Arg) const>
+        {
+            using type = std::remove_cvref_t<Arg>;
+        };
+
+        template <typename T>
+        struct function_pointer
+        {
+            using type = decltype(&T::operator());
+        };
+
+        template <typename T>
+            requires std::is_function_v<std::remove_pointer_t<T>>
+        struct function_pointer<T>
+        {
+            using type = std::conditional_t<std::is_pointer_v<T>, T, std::add_pointer_t<T>>;
+        };
+
+        class NodeView
+        {
+        public:
+            const optional_view<const TransformableErasure> _transform{ std::nullopt };
+            mutable bool _else_valid{ false };
+
+        public:
+            constexpr NodeView() = default;
+
+            constexpr NodeView(const TransformableErasure& transform)
+                : _transform{ transform }
+            {
+            }
+
+            constexpr const NodeView& and_then(auto&& f) const
+            {
+                using T = std::remove_cvref_t<decltype(f)>;
+                using FuncPtr = typename function_pointer<T>::type;
+                using ArgType = typename first_param<FuncPtr>::type;
+                static_assert(Transformable<ArgType>, "Parameter of f must satisfy Transformable requirement");
+
+                if (_transform) {
+                    const auto transform_view{ _transform->cast<ArgType>() };
+                    if (transform_view) {
+                        f(*transform_view);
+                        _else_valid = true;
+                    }
+                }
+                return *this;
+            }
+
+            constexpr void or_else(auto&& f) const
+                requires std::is_invocable_v<decltype(f)>
+            {
+                if (not _transform or not _else_valid) {
+                    f();
+                }
+            }
+        };
+
     }
 
     class Node
@@ -266,11 +334,14 @@ namespace spacegraph
         {
         }
 
-        constexpr ~Node() = default;
-        constexpr Node(const Node&) = default;
-        constexpr Node(Node&&) = default;
-        constexpr Node& operator=(const Node&) = default;
-        constexpr Node& operator=(Node&&) = default;
+        constexpr details::NodeView transform_to(const Node& other) const
+        {
+            if (not _transform)
+                return {};
+            if (std::addressof(other) == this)
+                return { *_transform };
+            return {};
+        }
 
         template <details::Transformable T>
         constexpr details::optional_view<const T> transformable() const
@@ -281,7 +352,7 @@ namespace spacegraph
         template <details::Transformable T>
         constexpr details::optional_view<const T> transform_to(const Node& other) const
         {
-            if (!_transform)
+            if (not _transform)
                 return std::nullopt;
             if (std::addressof(other) == this)
                 return transformable<T>();
